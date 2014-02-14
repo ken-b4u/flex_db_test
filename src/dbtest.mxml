@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:WindowedApplication xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" width="620" height="420">
+	<mx:Script>
+		<![CDATA[
+			import mx.controls.Alert;
+			import mx.collections.ArrayCollection;
+			
+			private var _dbUtil:DBUtil;
+			
+			[Bindable]
+			private var _myResultAC:ArrayCollection;
+			
+			private function init():void
+			{
+				excuteBtn.addEventListener(MouseEvent.CLICK, excuteSQLBtnClickHD);
+				tableInfoBtn.addEventListener(MouseEvent.CLICK, tableInfoBtnClickHD);
+				
+				_dbUtil = new DBUtil();
+				_dbUtil.addEventListener(DBUtil.ASYNC_CONNECT_COMPLETE, dbAsyncCompHD);
+			}
+			
+			private function tableInfoBtnClickHD(e:MouseEvent):void
+			{
+				_dbUtil.addEventListener(DBUtil.SCHEMA_COMPLETE, dbSchemaCompHD);
+				_dbUtil.addEventListener(SQLErrorEvent.ERROR, dbSchemaErrorHD);
+				_dbUtil.getTableInfo();
+			}
+			
+			private function dbSchemaErrorHD(e:SQLErrorEvent):void
+			{
+				_dbUtil.removeEventListener(DBUtil.SCHEMA_COMPLETE, dbSchemaCompHD);
+				_dbUtil.removeEventListener(SQLErrorEvent.ERROR, dbSchemaErrorHD);
+				Alert.show(e.error.message + '\n' + e.error.details);
+			}
+			
+			private function dbSchemaCompHD(e:Event):void
+			{
+				_dbUtil.removeEventListener(DBUtil.SCHEMA_COMPLETE, dbSchemaCompHD);
+				_dbUtil.removeEventListener(SQLErrorEvent.ERROR, dbSchemaErrorHD);
+				_myResultAC = _dbUtil.resultArrayCollection;
+				//Alert.show('table schema read complete');
+			}
+			
+			private function excuteSQLBtnClickHD(e:MouseEvent):void
+			{				
+				_dbUtil.addEventListener(DBUtil.ASYNC_SQL_COMPLETE, dbSQLCompleteHD);
+				_dbUtil.addEventListener(SQLErrorEvent.ERROR, dbSQLErrorHD);
+				_dbUtil.executeSQLState(sqlInputTxt.text);
+			}
+			
+			private function dbSQLErrorHD(e:SQLErrorEvent):void
+			{
+				_dbUtil.removeEventListener(DBUtil.ASYNC_SQL_COMPLETE, dbSQLCompleteHD);
+				_dbUtil.removeEventListener(SQLErrorEvent.ERROR, dbSQLErrorHD);
+				Alert.show(e.error.message + '\n' + e.error.details);
+			}
+			
+			private function dbSQLCompleteHD(e:Event):void
+			{
+				_dbUtil.removeEventListener(DBUtil.ASYNC_SQL_COMPLETE, dbSQLCompleteHD);
+				_dbUtil.removeEventListener(SQLErrorEvent.ERROR, dbSQLErrorHD);
+				_myResultAC = _dbUtil.resultArrayCollection;
+				//Alert.show('SQL excuted !');
+			}
+			
+			private function dbAsyncCompHD(e:Event):void
+			{
+				Alert.show("SQL connection complete !");
+			}
+		]]>
+	</mx:Script>
+	<mx:Panel x="0" y="0" width="588" height="388" layout="absolute" title="SQLTest" initialize="init();">
+		<mx:DataGrid x="10" y="111" width="548" height="227" id="myDG" dataProvider="{_myResultAC}"/>
+		<mx:Button x="10" y="81" label="SQL実行" id="excuteBtn"/>
+		<mx:Button x="88" y="81" label="table情報" id="tableInfoBtn"/>
+		<mx:TextArea x="10" y="10" width="548" height="63" id="sqlInputTxt" wordWrap="true" editable="true"/>
+	</mx:Panel>
+</mx:WindowedApplication>
